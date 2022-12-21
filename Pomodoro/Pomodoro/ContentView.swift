@@ -11,39 +11,50 @@ struct ContentView: View {
     
     @StateObject private var viewModel = ViewModel()
     
+    @State var isTimerStarted = false
+    @State var timeDuration = 1500
+    @State var time = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    
     
     private var countDownStartTime: String = "25:00"
    @State private var timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         
-        VStack {
-            Text("Time: \(viewModel.time)")
-                .padding(.top, 200)
-                .padding(.bottom, 100)
-            Button("Start") {
-                viewModel.countDownStart(minutes: viewModel.minutes)
+            VStack {
+                VStack {
+                    Text("\(self.timeDuration, specifier: formatTime() )")
+                }
             }
-            .disabled(viewModel.isTicking)
-            
-            Button {
-                timer.upstream.connect().cancel()
-                
-            } label: {
-                Label("Stop", systemImage: "nosign")
+            HStack(spacing:20) {
+   
+                Button(action:{
+                    
+                    if self.timeDuration > 0 {
+                        self.timeDuration -= 1
+                        self.isTimerStarted.toggle()
+                    }
+                }){
+                    HStack(spacing: 15) {
+                        Text(!self.isTimerStarted ? "Start" : "Pause")
+                            .foregroundColor(self.isTimerStarted ? .red : .green)
+                    }
+                }
             }
-            .buttonStyle(.bordered)
-            
-            Button {
-                timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-            } label: {
-                Label("Resume", systemImage: "play")
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .onReceive(timer) { _ in
-            viewModel.updateCountdown()
-        }
+        .onReceive(self.time, perform: { _ in
+            if self.isTimerStarted {
+                if self.timeDuration != 0 {
+                    self.timeDuration -= 1
+                }
+             }
+        })
+        
+    }
+    
+    func formatTime()->String {
+        let minutes = Int(timeDuration) / 60 % 60
+        let seconds = Int(timeDuration) % 60
+        return String(format: "%02i:%02i", minutes,seconds)
     }
 }
 
